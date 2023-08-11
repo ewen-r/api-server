@@ -12,6 +12,8 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import testRouter from "./routes/test.js";
 import * as STRINGS from "./strings.js";
+import swaggerUI from "swagger-ui-express";
+import swaggerJSDoc from "swagger-jsdoc";
 
 
 /* Set dirname prefix for the current root so that files can be served.
@@ -28,8 +30,33 @@ loadEnv();
 // Set port from env or use default 4000.
 const PORT = process.env.port || 4000;
 
+// Create swagger-jsdoc options
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'api-server',
+      version: '1.0.0',
+      description: 'server-api test by E Reynolds.'
+    },
+    servers: [
+      { url: `http://127.0.0.1:${PORT}`},
+      { url: 'https://api-server-j2h3.onrender.com' }
+    ]
+  },
+  // files containing annotations
+  apis: [
+    './routes/*.js'
+  ]
+};
+
+// Initialise swagger-jsdoc
+const specs = swaggerJSDoc(options);
+
+
 const app = express();
 app.use(express.json());
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 
 // Use router from TEST

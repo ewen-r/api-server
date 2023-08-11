@@ -42,10 +42,8 @@ const testData = [
   },
   {
     "id": 7,
-    "quote": "I’ve missed more than 9000 shots in my career. I’ve lost almost 300 games. "
-      + "26 times I’ve been trusted to take the game winning shot and missed. "
-      + "I’ve failed over and over and over again in my life. And that is why I succeed.",
-    "author": "Michael Jordan"
+    "quote": "The way to get started is to quit talking and begin doing.",
+    "author": "Walt Disney"
   },
   {
     "id": 8,
@@ -79,9 +77,8 @@ const testData = [
   },
   {
     "id": 14,
-    "quote": "Twenty years from now you will be more disappointed by the things that you didn’t do than by the ones you did do, "
-      + "so throw off the bowlines, sail away from safe harbor, catch the trade winds in your sails.  Explore, Dream, Discover.",
-    "author": "Mark Twain"
+    "quote": "When you reach the end of your rope, tie a knot in it and hang on.",
+    "author": "Franklin D. Roosevelt"
   },
   {
     "id": 15,
@@ -140,8 +137,8 @@ const testData = [
   },
   {
     "id": 26,
-    "quote": "I’ve learned that people will forget what you said, people will forget what you did, but people will never forget how you made them feel.",
-    "author": "Maya Angelou"
+    "quote": "Always remember that you are absolutely unique. Just like everyone else.",
+    "author": "Margaret Mead"
   },
   {
     "id": 27,
@@ -155,8 +152,8 @@ const testData = [
   },
   {
     "id": 29,
-    "quote": "The two most important days in your life are the day you are born and the day you find out why.",
-    "author": "Mark Twain"
+    "quote": "Be yourself; everyone else is already taken.",
+    "author": "Oscar Wilde"
   },
   {
     "id": 30,

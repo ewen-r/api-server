@@ -18,8 +18,55 @@ const router = express.Router();
 // Use local copy of test data.
 let myTestData = [...testData];
 
+/**
+  * @swagger
+  *  components:
+  *    schemas:
+  *      Quote:
+  *        type: object
+  *        required:
+  *          - author
+  *          - quote
+  *        properties:
+  *          id:
+  *            type: number
+  *            description: Item UUID.
+  *          author:
+  *            type: string
+  *            description: Item author.
+  *          quote:
+  *            type: string
+  *            description: Item content.
+  *        example:
+  *          id: 1
+  *          quote: "Strive not to be a success, but rather to be of value."
+  *          author: "Albert Einstein"
+ */
 
-/* Handle GET requests to '/'
+/**
+  * @swagger
+  *   tags:
+  *     name: Quotes
+  *     description: API for managing quotes.
+ */
+
+/** Handle GET requests to '/'
+  * @swagger
+  * /test:
+  *   get:
+  *     summary: Retrieve the list of all items.
+  *     tags: [Quotes]
+  *     responses:
+  *       200:
+  *         description: Successfully retrieved all items.
+  *         content:
+  *           application/json:
+  *             schema:
+  *               type: array
+  *               items:
+  *                 $ref: '#components/schemas/Quote'
+  *       500:
+  *         description: General server error.
 */
 router.get('/',
   (req, res) => {
@@ -39,7 +86,29 @@ router.get('/',
 );
 
 
-/* Handle POST requests to '/'
+/** Handle POST requests to '/'
+  * @swagger
+  * /test/:
+  *   post:
+  *     summary: Create a new entry.
+  *     tags: [Quotes]
+  *     requestBody:
+  *       required: true
+  *       content:
+  *         application/json:
+  *           schema:
+  *             $ref: '#components/schemas/Quote'
+  *     responses:
+  *       200:
+  *         description: Successfully added item.
+  *         content:
+  *           application/json:
+  *             schema:
+  *               $ref: '#components/schemas/Quote'
+  *       400:
+  *         description: Bad request.
+  *       500:
+  *         description: General server error.
 */
 router.post('/',
   (req, res) => {
@@ -56,7 +125,7 @@ router.post('/',
       else {
         console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
 
-        return res.status(500).send(STRINGS.ERROR_BAD_REQUEST);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
@@ -68,7 +137,30 @@ router.post('/',
 
 
 
-/* Handle GET requests to '/:id'
+/** Handle GET requests to '/:id'
+  * @swagger
+  * /test/{id}:
+  *   get:
+  *     summary: Retrieve a specific entry.
+  *     tags: [Quotes]
+  *     parameters:
+  *       - in: path
+  *         name: id
+  *         schema:
+  *           type: number
+  *         required: true
+  *         description: UUID for the required item.
+  *     responses:
+  *       200:
+  *         description: Successfully retrieved item.
+  *         content:
+  *           application/json:
+  *             schema:
+  *               $ref: '#components/schemas/Quote'
+  *       404:
+  *         description: Item not found.
+  *       500:
+  *         description: General server error.
 */
 router.get('/:id',
   (req, res) => {
@@ -85,7 +177,7 @@ router.get('/:id',
       }
       console.error(METHOD + STRINGS.ERROR_NOT_FOUND);
 
-      return res.status(500).send(STRINGS.ERROR_NOT_FOUND);
+      return res.status(404).send(STRINGS.ERROR_NOT_FOUND);
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
 
