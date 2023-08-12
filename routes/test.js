@@ -50,6 +50,7 @@ let myTestData = [...testData];
   *     description: API for managing quotes.
  */
 
+
 /** Handle GET requests to '/'
   * @swagger
   * /test:
@@ -75,11 +76,9 @@ router.get('/',
 
     try {
       console.log(METHOD + STRINGS.SUCCESS, testData);
-
       return res.send(myTestData);
     } catch (err) {
       console.error(METHOD + ERROR, err);
-
       return res.status(500).send(err);
     }
   }
@@ -119,22 +118,18 @@ router.post('/',
       const insertedRecord = insertRecord(req.body);
       if (insertedRecord) {
         console.log(METHOD + STRINGS.SUCCESS, insertedRecord);
-
         return res.send(insertedRecord);
       }
       else {
         console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
-
         return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
-
       return res.status(500).send(err);
     }
   }
 );
-
 
 
 /** Handle GET requests to '/:id'
@@ -176,19 +171,96 @@ router.get('/:id',
         return res.send(foundRecord);
       }
       console.error(METHOD + STRINGS.ERROR_NOT_FOUND);
-
       return res.status(404).send(STRINGS.ERROR_NOT_FOUND);
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
-
       return res.status(500).send(err);
     }
   }
 );
 
 
+/** Handle PATCH requests to '/'
+  * @swagger
+  * /test/{id}:
+  *   patch:
+  *     summary: Update a specific entry.
+  *     tags: [Quotes]
+  *     parameters:
+  *       - in: path
+  *         name: id
+  *     requestBody:
+  *       required: true
+  *       content:
+  *         application/json:
+  *           schema:
+  *             $ref: '#components/schemas/Quote'
+  *     responses:
+  *       200:
+  *         description: Successfully updated item.
+  *         content:
+  *           application/json:
+  *             schema:
+  *               $ref: '#components/schemas/Quote'
+  *       400:
+  *         description: Bad request.
+  *       404:
+  *         description: Item not found.
+  *       500:
+  *         description: General server error.
+*/
+router.patch('/:id',
+  (req, res) => {
+    const METHOD = MODULE + ' PATCH: "/": ';
+    console.log(METHOD, req.body);
 
-/* Handle DELETE requests to '/:id'
+    try {
+      if (recordFindById(req.params.id) < 0) {
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND);
+        return res.status(500).send(STRINGS.ERROR_NOT_FOUND);
+      }
+
+      const updatedRecord = updateRecord(req.params.id, req.body);
+      if (updatedRecord) {
+        console.log(METHOD + STRINGS.SUCCESS, updatedRecord);
+        return res.send(updatedRecord);
+      }
+      else {
+        console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
+      }
+    } catch (err) {
+      console.error(METHOD + STRINGS.ERROR_CATCH, err);
+      return res.status(500).send(err);
+    }
+  }
+);
+
+
+/** Handle DELETE requests to '/:id'
+  * @swagger
+  * /test/{id}:
+  *   delete:
+  *     summary: Delete a specific entry.
+  *     tags: [Quotes]
+  *     parameters:
+  *       - in: path
+  *         name: id
+  *         schema:
+  *           type: number
+  *         required: true
+  *         description: UUID for the required item.
+  *     responses:
+  *       200:
+  *         description: Successfully deleted item.
+  *         content:
+  *           application/json:
+  *             schema:
+  *               $ref: '#components/schemas/Quote'
+  *       404:
+  *         description: Item not found.
+  *       500:
+  *         description: General server error.
 */
 router.delete('/:id',
   (req, res) => {
@@ -196,12 +268,8 @@ router.delete('/:id',
     console.log(METHOD);
 
     try {
-      const foundRecord = myTestData.find(
-        r => r.id == req.params.id
-      );
-      if (!foundRecord) {
+      if (recordFindById(req.params.id) < 0) {
         console.error(METHOD + STRINGS.ERROR_NOT_FOUND);
-
         return res.status(500).send(STRINGS.ERROR_NOT_FOUND);
       }
 
@@ -221,9 +289,24 @@ router.delete('/:id',
 );
 
 
+/** Find a record by ID.
+  * @param {number} id Record ID.
+  * @returns {number} Record index or -1 if not found.
+*/
+function recordFindById(id) {
+  const METHOD = MODULE + ' recordFindById(): ';
+  console.debug(METHOD, id);
+
+  return myTestData.findIndex(
+    r => r.id == id
+  );
+}
+
 
 /** Insert a new record..
- */
+  * @param {record} record Record to insert.
+  * @returns {record | null} If success returns record else null.
+*/
 function insertRecord(record) {
   const METHOD = MODULE + ' insertRecord(): ';
   console.debug(METHOD, record);
@@ -242,6 +325,28 @@ function insertRecord(record) {
   }
 
   return null;
+}
+
+
+/** Update a record..
+  * @param {number} id ID of record to update.
+  * @param {record} record New record values.
+  * @returns {record | null} If success returns record else null.
+*/
+function updateRecord(id, record) {
+  const METHOD = MODULE + ' updateRecord(): ';
+  console.debug(METHOD, record);
+
+  const index = recordFindById(id);
+  if (index < 0) {
+    return null;
+  }
+
+  // NOTE: Do not update id.
+  record.author && (myTestData[index].author = record.author);
+  record.quote && (myTestData[index].quote = record.quote);
+
+  return myTestData[index];
 }
 
 
