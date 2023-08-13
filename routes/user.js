@@ -6,13 +6,14 @@
     in whole or in part, without the express prior written permission.
 */
 
-
 import express from "express";
 import * as STRINGS from "../strings.js";
+import bcrypt from "bcryptjs";
+import _ from "lodash";
 
 
+// Name of this module.
 const MODULE = 'USER';
-
 
 // Get router.
 const router = express.Router();
@@ -71,33 +72,35 @@ let myTestData = [
   *         description: General server error.
 */
 router.post('/register',
-  (req, res) => {
+  async function (req, res) {
     const METHOD = MODULE + ' POST: "/register": ';
     console.log(METHOD, req.body);
 
     try {
+      // Return error if username and password were not supplied.
       const { username, password } = req.body;
+      if (!(password && username)) {
+        console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
+        return res.status(400).send();
+      }
 
+      // Return error if user already exists.
       const user = recordFindByUsername(username);
       if (user) {
         console.error(METHOD + STRINGS.ERROR_USER_EXISTS, req.body);
         return res.status(400).send(STRINGS.ERROR_USER_EXISTS);
       }
 
-      // Check password.
-      if (!password) {
-        console.error(METHOD + STRINGS.ERROR_INVALID_PASSWORD);
-        return res.status(400).send();
+      // Return error if record could not be inserted.
+      const insertedRecord = await insertRecord(req.body);
+      if (!insertedRecord) {
+        console.error(METHOD + STRINGS.ERROR_GENERAL, req.body);
+        return res.status(500).send(STRINGS.ERROR_GENERAL);
       }
 
-      const insertedRecord = insertRecord(req.body);
-      if (insertedRecord) {
-        console.log(METHOD + STRINGS.SUCCESS, insertedRecord);
-        return res.send( {token: insertedRecord.token});
-      }
-
-      console.error(METHOD + STRINGS.ERROR_GENERAL, req.body);
-      return res.status(500).send(STRINGS.ERROR_GENERAL);
+      // All OK... return token.
+      console.log(METHOD + STRINGS.SUCCESS, insertedRecord);
+      return res.send({ token: insertedRecord.token });
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(err);
@@ -144,26 +147,34 @@ router.post('/register',
   *         description: General server error.
 */
 router.post('/login',
-  (req, res) => {
+  async function (req, res) {
     const METHOD = MODULE + ' POST: "/login": ';
     console.log(METHOD, req.body);
 
     try {
+      // Return error if username and password were not supplied.
+      const { username, password } = req.body;
+      if (!(password && username)) {
+        console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
+        return res.status(400).send();
+      }
+
+      // Return error if user doesn't exist.
       const user = recordFindByUsername(req.body.username);
       if (!user) {
         console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
         return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
-      // Check password.
-      if (!passwordIsValid(req.body.password, user.password)) {
+      // Return error if password is incorrect.
+      if (!await passwordIsValid(req.body.password, user.password)) {
         console.error(METHOD + STRINGS.ERROR_BAD_PASSWORD);
         return res.status(400).send();
       }
 
-      // All OK.. send token.
+      // All OK... return token.
       console.log(METHOD + STRINGS.SUCCESS, user);
-      return res.send({token: user.token});
+      return res.send({ token: user.token });
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(err);
@@ -181,7 +192,7 @@ function recordFindByUsername(username) {
   console.debug(METHOD, username);
 
   return myTestData.find(
-    r => r.username == username
+    r => r.username == _.lowerCase(username)
   );
 }
 
@@ -191,11 +202,10 @@ function recordFindByUsername(username) {
   * @param {string} expectedPassword expected password.
   * @returns {record} Record or undefined if not found.
 */
-function passwordIsValid(password, expectedPassword) {
+async function passwordIsValid(password, expectedPassword) {
   const METHOD = MODULE + ' passwordIsValid(): ';
-  console.debug(METHOD, password, expectedPassword);
-
-  return (password == expectedPassword);
+  console.debug(METHOD);
+  return (await bcrypt.compare(password, expectedPassword));
 }
 
 
@@ -203,29 +213,34 @@ function passwordIsValid(password, expectedPassword) {
   * @param {record} record Record to insert.
   * @returns {record | null} If success returns record else null.
 */
-function insertRecord(record) {
+async function insertRecord(record) {
   const METHOD = MODULE + ' insertRecord(): ';
   console.debug(METHOD, record);
 
-  const randomNumber = Math.floor(Math.random() * 1000000);
+  // Return error if username and password were not supplied.
+  const { username, password } = record;
+  if (!(password && username)) {
+    console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
+    return res.status(400).send();
+  }
 
-  const { username, password} = record;
+  // CReate password hash.
+  const encryptedPassword = await bcrypt.hash(password, 10);
+  // Create new record.
   const newRecord = {
-    username: username,
-    password: password,
-    token: `${username}-${randomNumber}`
+    username: _.lowerCase(username),
+    password: encryptedPassword,
+    token: `${Math.floor(Math.random() * 1000000)}`
   };
 
+  // Store new record.
   if (newRecord.username && newRecord.password) {
     myTestData.push(newRecord);
-
     return newRecord;
   }
 
   return null;
 }
-
-
 
 
 // Export this router.

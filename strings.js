@@ -15,6 +15,7 @@ export const ERROR_USER_EXISTS = 'ERROR: User already exists';
 export const ERROR_BAD_PASSWORD = 'ERROR: Incorrect password';
 export const ERROR_INVALID_PASSWORD = 'ERROR: Password invalid';
 export const ERROR_GENERAL = 'ERROR: General error';
+export const ERROR_INVALID_INPUT = 'ERROR: Invalid input data';
 
 export const INFO = 'INFO:';
 
