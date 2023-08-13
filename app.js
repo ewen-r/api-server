@@ -10,10 +10,11 @@ import express from "express";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import testRouter from "./routes/test.js";
 import * as STRINGS from "./strings.js";
 import swaggerUI from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
+import testRouter from "./routes/test.js";
+import userRouter from "./routes/user.js";
 
 
 /* Set dirname prefix for the current root so that files can be served.
@@ -61,7 +62,7 @@ app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 // Use router from TEST
 app.use('/test', testRouter);
-
+app.use('/user/', userRouter);
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
