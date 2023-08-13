@@ -120,10 +120,9 @@ router.post('/',
         console.log(METHOD + STRINGS.SUCCESS, insertedRecord);
         return res.send(insertedRecord);
       }
-      else {
-        console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
-        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
-      }
+
+      console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
+      return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(err);
@@ -166,10 +165,12 @@ router.get('/:id',
       const foundRecord = myTestData.find(
         r => r.id == req.params.id
       );
+
       if (foundRecord) {
         console.log(METHOD + STRINGS.SUCCESS, foundRecord);
         return res.send(foundRecord);
       }
+
       console.error(METHOD + STRINGS.ERROR_NOT_FOUND);
       return res.status(404).send(STRINGS.ERROR_NOT_FOUND);
     } catch (err) {
@@ -225,10 +226,9 @@ router.patch('/:id',
         console.log(METHOD + STRINGS.SUCCESS, updatedRecord);
         return res.send(updatedRecord);
       }
-      else {
-        console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
-        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
-      }
+
+      console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
+      return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(err);
@@ -278,11 +278,9 @@ router.delete('/:id',
       );
       myTestData = records;
       console.log(METHOD + STRINGS.SUCCESS);
-
       return res.status(200).send();
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
-
       return res.status(500).send(err);
     }
   }
@@ -320,7 +318,6 @@ function insertRecord(record) {
 
   if (newRecord.author && newRecord.quote) {
     myTestData.push(newRecord);
-
     return newRecord;
   }
 
