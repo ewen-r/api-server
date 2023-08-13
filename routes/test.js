@@ -22,7 +22,7 @@ let myTestData = [...testData];
   * @swagger
   *  components:
   *    schemas:
-  *      Quote:
+  *      TestData:
   *        type: object
   *        required:
   *          - author
@@ -39,15 +39,15 @@ let myTestData = [...testData];
   *            description: Item content.
   *        example:
   *          id: 1
-  *          quote: "Strive not to be a success, but rather to be of value."
-  *          author: "Albert Einstein"
+  *          quote: "Hello World."
+  *          author: "Anon programmer"
  */
 
 /**
   * @swagger
   *   tags:
-  *     name: Quotes
-  *     description: API for managing quotes.
+  *     name: Test
+  *     description: Test API end-point.
  */
 
 
@@ -56,7 +56,7 @@ let myTestData = [...testData];
   * /test:
   *   get:
   *     summary: Retrieve the list of all items.
-  *     tags: [Quotes]
+  *     tags: [Test]
   *     responses:
   *       200:
   *         description: Successfully retrieved all items.
@@ -65,7 +65,7 @@ let myTestData = [...testData];
   *             schema:
   *               type: array
   *               items:
-  *                 $ref: '#components/schemas/Quote'
+  *                 $ref: '#components/schemas/TestData'
   *       500:
   *         description: General server error.
 */
@@ -90,20 +90,20 @@ router.get('/',
   * /test/:
   *   post:
   *     summary: Create a new entry.
-  *     tags: [Quotes]
+  *     tags: [Test]
   *     requestBody:
   *       required: true
   *       content:
   *         application/json:
   *           schema:
-  *             $ref: '#components/schemas/Quote'
+  *             $ref: '#components/schemas/TestData'
   *     responses:
   *       200:
   *         description: Successfully added item.
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/Quote'
+  *               $ref: '#components/schemas/TestData'
   *       400:
   *         description: Bad request.
   *       500:
@@ -137,7 +137,7 @@ router.post('/',
   * /test/{id}:
   *   get:
   *     summary: Retrieve a specific entry.
-  *     tags: [Quotes]
+  *     tags: [Test]
   *     parameters:
   *       - in: path
   *         name: id
@@ -151,7 +151,7 @@ router.post('/',
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/Quote'
+  *               $ref: '#components/schemas/TestData'
   *       404:
   *         description: Item not found.
   *       500:
@@ -185,7 +185,7 @@ router.get('/:id',
   * /test/{id}:
   *   patch:
   *     summary: Update a specific entry.
-  *     tags: [Quotes]
+  *     tags: [Test]
   *     parameters:
   *       - in: path
   *         name: id
@@ -194,14 +194,14 @@ router.get('/:id',
   *       content:
   *         application/json:
   *           schema:
-  *             $ref: '#components/schemas/Quote'
+  *             $ref: '#components/schemas/TestData'
   *     responses:
   *       200:
   *         description: Successfully updated item.
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/Quote'
+  *               $ref: '#components/schemas/TestData'
   *       400:
   *         description: Bad request.
   *       404:
@@ -242,7 +242,7 @@ router.patch('/:id',
   * /test/{id}:
   *   delete:
   *     summary: Delete a specific entry.
-  *     tags: [Quotes]
+  *     tags: [Test]
   *     parameters:
   *       - in: path
   *         name: id
@@ -256,7 +256,7 @@ router.patch('/:id',
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/Quote'
+  *               $ref: '#components/schemas/TestData'
   *       404:
   *         description: Item not found.
   *       500:
