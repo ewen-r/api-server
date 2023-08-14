@@ -47,7 +47,7 @@ const REFRESH_TOKEN_EXPIRE = (ACCESS_TOKEN_EXPIRE + (5 * 60));
   * @swagger
   * /user/register:
   *   post:
-  *     summary: Attempt to register a new user.
+  *     summary: Register a new user.
   *     tags: [User]
   *     requestBody:
   *       required: true
@@ -142,7 +142,7 @@ router.post('/register',
   * @swagger
   * /user/login:
   *   post:
-  *     summary: Attempt login and retrieve auth token.
+  *     summary: Log-in and retrieve auth tokens.
   *     tags: [User]
   *     requestBody:
   *       required: true
@@ -302,7 +302,7 @@ router.delete('/login',
   * @swagger
   * /user/refresh:
   *   post:
-  *     summary: Refresh login tokens.
+  *     summary: Retrieve refreshed auth tokens.
   *     tags: [User]
   *     requestBody:
   *       required: true

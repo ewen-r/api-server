@@ -89,7 +89,7 @@ router.get('/',
   * @swagger
   * /test/:
   *   post:
-  *     summary: Create a new entry.
+  *     summary: Create a new item.
   *     tags: [Test]
   *     requestBody:
   *       required: true
@@ -135,7 +135,7 @@ router.post('/',
   * @swagger
   * /test/{id}:
   *   get:
-  *     summary: Retrieve a specific entry.
+  *     summary: Retrieve a specific item.
   *     tags: [Test]
   *     parameters:
   *       - in: path
@@ -185,7 +185,7 @@ router.get('/:id',
   * @swagger
   * /test/{id}:
   *   patch:
-  *     summary: Update a specific entry.
+  *     summary: Update a specific item.
   *     tags: [Test]
   *     parameters:
   *       - in: path
@@ -241,7 +241,7 @@ router.patch('/:id',
   * @swagger
   * /test/{id}:
   *   delete:
-  *     summary: Delete a specific entry.
+  *     summary: Delete a specific item.
   *     tags: [Test]
   *     parameters:
   *       - in: path
