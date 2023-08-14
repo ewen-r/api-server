@@ -23,7 +23,8 @@ const router = express.Router();
 let myTestData = [
   {
     username: 'feeb',
-    password: 'wibble'
+    password: 'wibble',
+    refreshToken: ''
   }
 ];
 
@@ -33,8 +34,6 @@ const ACCESS_TOKEN_EXPIRE = (60 * 60);
 /** Refresh token expire time in seconds (should be longer than access token expire time). */
 const REFRESH_TOKEN_EXPIRE = (ACCESS_TOKEN_EXPIRE + (5 * 60));
 
-/** List of all current refresh tokens. */
-let refreshTokens = [];
 
 /**
   * @swagger
@@ -102,19 +101,25 @@ router.post('/register',
         return res.status(400).send(STRINGS.ERROR_USER_EXISTS);
       }
 
+      // Generate new user.
+      const encryptedPassword = await bcrypt.hash(password, 10);
+      const accessToken = generateAccessToken(username);
+      const refreshToken = generateRefreshToken(username);
+      if (!(encryptedPassword && accessToken && refreshToken)) {
+        console.error(METHOD + STRINGS.ERROR_TOKEN_CREATE);
+        return res.status(500).send(STRINGS.ERROR_GENERAL);
+      }
+      const newUser = {
+        username: _.lowerCase(username),
+        password: encryptedPassword,
+        refreshToken: refreshToken
+      };
+
       // Return error if record could not be inserted.
-      const insertedRecord = await insertRecord(username);
+      const insertedRecord = await insertRecord(newUser);
       if (!insertedRecord) {
         console.error(METHOD + STRINGS.ERROR_GENERAL, username);
         return res.status(500).send(STRINGS.ERROR_GENERAL);
-      }
-
-      // Generate access and refresh tokens.
-      const accessToken = generateAccessToken(username);
-      const refreshToken = generateRefreshToken(username);
-      if (!(accessToken && refreshToken)) {
-        console.error(METHOD + STRINGS.ERROR_TOKEN_CREATE);
-        return res.status(500).send(STRINGS.ERROR_TOKEN_CREATE);
       }
 
       // All OK... return tokens.
@@ -123,7 +128,7 @@ router.post('/register',
         refreshToken: refreshToken
       };
 
-      console.log(METHOD + STRINGS.SUCCESS, ret);
+      console.log(METHOD + STRINGS.SUCCESS, username);
       return res.send(ret);
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
@@ -207,8 +212,12 @@ router.post('/login',
         return res.status(500).send(STRINGS.ERROR_TOKEN_CREATE);
       }
 
+      // Update user's refresh token.
+      user.refreshToken = refreshToken;
+      updateRecord(user);
+
       // All OK... return tokens.
-      console.log(METHOD + STRINGS.SUCCESS, user);
+      console.log(METHOD + STRINGS.SUCCESS, username);
       return res.send(
         {
           accessToken: accessToken,
@@ -231,18 +240,20 @@ router.post('/login',
   *     summary: Log-out.
   *     tags: [User]
   *     requestBody:
-  *       required: false
+  *       required: true
   *       content:
   *         application/json:
   *           schema:
   *             type: object
   *             properties:
-  *                 refreshToken:
-  *                   type: string
-  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNzAzOX0.UshglaCpw-HVoX5OswtXEvFYih5_snzcZXCQ1i7gJcg
+  *               username:
+  *                 type: string
+  *                 example: feeb
   *     responses:
-  *       200:
+  *       204:
   *         description: Successful log-out.
+  *       400:
+  *         description: Bad request.
   *       500:
   *         description: General server error.
 */
@@ -252,25 +263,39 @@ router.delete('/login',
     console.log(METHOD, req.body);
 
     try {
-      // Retrieve refresh token if supplied.
-      const { refreshToken } = req.body;
-      if (refreshToken) {
-        console.debug(METHOD + ' Removing refresh token', refreshToken);
-        refreshTokens = refreshTokens.filter(
-          t => t != refreshToken
-        );
-        console.debug(METHOD + " refreshTokens", refreshTokens);
+      // Return error if username not supplied.
+      const { username } = req.body;
+      if (!username) {
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND, username);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
+      // Return error if user doesn't exist.
+      const user = recordFindByUsername(username);
+      if (!user) {
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND, username);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
+      }
+
+      // Return error if user is already logged out.
+      if (!user.refreshToken) {
+        console.error(METHOD + STRINGS.USER_LOGGED_OUT, username);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
+      }
+
+      // Delete user's refresh token.
+      user.refreshToken = null;
+      updateRecord(user);
+
       // Return status.
-      return res.status(204).send(STRINGS.USER_LOGGED_OUT);
+      console.log(METHOD + STRINGS.SUCCESS, username);
+      return res.status(204).send();
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(STRINGS.ERROR_GENERAL);
     }
   }
 );
-
 
 
 /** Handle GET requests to '/refresh'
@@ -319,7 +344,7 @@ router.post('/refresh',
     console.log(METHOD, req.body);
 
     try {
-      // Return error if refresh token was not supplied.
+      // Return error if username or refresh token was not supplied.
       const { username, refreshToken } = req.body;
       if (!(refreshToken && username)) {
         console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
@@ -333,10 +358,9 @@ router.post('/refresh',
         return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
-      // Return error if refresh token doesn't exist.
-      const index = refreshTokens.indexOf(refreshToken);
-      if (index < 0) {
-        console.error(METHOD + STRINGS.ERROR_NOT_FOUND, refreshToken, refreshTokens);
+      // Return error if refresh token doesn't match.
+      if (user.refreshToken !== refreshToken) {
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND + " refresh token");
         return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
@@ -348,8 +372,12 @@ router.post('/refresh',
         return res.status(500).send(STRINGS.ERROR_TOKEN_CREATE);
       }
 
+      // Update stored refresh token.
+      user.refreshToken = newRefreshToken;
+      updateRecord(user);
+
       // All OK... return tokens.
-      console.log(METHOD + STRINGS.SUCCESS, user);
+      console.log(METHOD + STRINGS.SUCCESS, username);
       return res.send(
         {
           accessToken: newAccessToken,
@@ -362,7 +390,6 @@ router.post('/refresh',
     }
   }
 );
-
 
 
 /** Find a user by username.
@@ -398,29 +425,8 @@ async function passwordIsValid(password, expectedPassword) {
 async function insertRecord(record) {
   const METHOD = MODULE + ' insertRecord(): ';
   console.debug(METHOD, record);
-
-  // Return error if username and password were not supplied.
-  const { username, password } = record;
-  if (!(password && username)) {
-    console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
-    return res.status(400).send();
-  }
-
-  // Create password hash.
-  const encryptedPassword = await bcrypt.hash(password, 10);
-  // Create new record.
-  const newRecord = {
-    username: _.lowerCase(username),
-    password: encryptedPassword
-  };
-
-  // Store new record.
-  if (newRecord.username && newRecord.password) {
-    myTestData.push(newRecord);
-    return newRecord;
-  }
-
-  return null;
+  myTestData.push(record);
+  return record;
 }
 
 
@@ -459,15 +465,34 @@ function generateRefreshToken(username) {
   );
   console.debug(METHOD + " refreshToken", refreshToken);
 
-  // If a refresh token was generated...
-  if (refreshToken) {
-    // Save it.
-    refreshTokens.push(refreshToken);
-    console.debug(METHOD + " refreshTokens", refreshTokens);
-  }
-
   return refreshToken;
 }
+
+
+/** Update a record
+  * NOTE: The only param that can be modified is refreshToken.
+  * @param {record} record New record values.
+  * @returns {record | null} If success returns record else null.
+*/
+function updateRecord(record) {
+  const METHOD = MODULE + ' updateRecord(): ';
+  console.debug(METHOD, record);
+
+  const { username, refreshToken } = record;
+  const index = myTestData.findIndex(
+    u => u.username == username
+  );
+
+  if (index < 0) {
+    console.error(METHOD + STRINGS.ERROR_NOT_FOUND, username);
+    return null;
+  }
+
+  // The only param that can be modified is refreshToken.
+  refreshToken && (myTestData[index].refreshToken = refreshToken);
+  return myTestData[index];
+}
+
 
 
 // Export this router.
