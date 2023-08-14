@@ -22,4 +22,6 @@ export const INFO = 'INFO:';
 
 export const SUCCESS = 'SUCCESS: ';
 
+export const USER_LOGGED_OUT = 'User logged out';
+
 export const SPACER = '===============================';

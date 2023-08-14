@@ -23,14 +23,13 @@ const router = express.Router();
 let myTestData = [
   {
     username: 'feeb',
-    password: 'wibble',
-    token: 'myDummyToken'
+    password: 'wibble'
   }
 ];
 
 
-/** Access token expire time in seconds. */
-const ACCESS_TOKEN_EXPIRE = (15 * 60);
+/** Access token expire time in seconds (1 hour). */
+const ACCESS_TOKEN_EXPIRE = (60 * 60);
 /** Refresh token expire time in seconds (should be longer than access token expire time). */
 const REFRESH_TOKEN_EXPIRE = (ACCESS_TOKEN_EXPIRE + (5 * 60));
 
@@ -99,14 +98,14 @@ router.post('/register',
       // Return error if user already exists.
       const user = recordFindByUsername(username);
       if (user) {
-        console.error(METHOD + STRINGS.ERROR_USER_EXISTS, req.body);
+        console.error(METHOD + STRINGS.ERROR_USER_EXISTS, username);
         return res.status(400).send(STRINGS.ERROR_USER_EXISTS);
       }
 
       // Return error if record could not be inserted.
-      const insertedRecord = await insertRecord(req.body);
+      const insertedRecord = await insertRecord(username);
       if (!insertedRecord) {
-        console.error(METHOD + STRINGS.ERROR_GENERAL, req.body);
+        console.error(METHOD + STRINGS.ERROR_GENERAL, username);
         return res.status(500).send(STRINGS.ERROR_GENERAL);
       }
 
@@ -119,13 +118,13 @@ router.post('/register',
       }
 
       // All OK... return tokens.
-      console.log(METHOD + STRINGS.SUCCESS, insertedRecord);
-      return res.send(
-        {
-          accessToken: accessToken,
-          refreshToken: refreshToken
-        }
-      );
+      const ret = {
+        accessToken: accessToken,
+        refreshToken: refreshToken
+      };
+
+      console.log(METHOD + STRINGS.SUCCESS, ret);
+      return res.send(ret);
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(err);
@@ -188,14 +187,14 @@ router.post('/login',
       }
 
       // Return error if user doesn't exist.
-      const user = recordFindByUsername(req.body.username);
+      const user = recordFindByUsername(username);
       if (!user) {
-        console.error(METHOD + STRINGS.ERROR_BAD_REQUEST, req.body);
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND, username);
         return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
       // Return error if password is incorrect.
-      if (!await passwordIsValid(req.body.password, user.password)) {
+      if (!await passwordIsValid(password, user.password)) {
         console.error(METHOD + STRINGS.ERROR_BAD_PASSWORD);
         return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
@@ -222,6 +221,148 @@ router.post('/login',
     }
   }
 );
+
+
+
+/** Handle DELETE requests to '/login'
+  * @swagger
+  * /user/login:
+  *   delete:
+  *     summary: Log-out.
+  *     tags: [User]
+  *     requestBody:
+  *       required: false
+  *       content:
+  *         application/json:
+  *           schema:
+  *             type: object
+  *             properties:
+  *                 refreshToken:
+  *                   type: string
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNzAzOX0.UshglaCpw-HVoX5OswtXEvFYih5_snzcZXCQ1i7gJcg
+  *     responses:
+  *       200:
+  *         description: Successful log-out.
+  *       500:
+  *         description: General server error.
+*/
+router.delete('/login',
+  async function (req, res) {
+    const METHOD = MODULE + ' DELETE: "/login": ';
+    console.log(METHOD, req.body);
+
+    try {
+      // Retrieve refresh token if supplied.
+      const { refreshToken } = req.body;
+      if (refreshToken) {
+        console.debug(METHOD + ' Removing refresh token', refreshToken);
+        refreshTokens = refreshTokens.filter(
+          t => t != refreshToken
+        );
+        console.debug(METHOD + " refreshTokens", refreshTokens);
+      }
+
+      // Return status.
+      return res.status(204).send(STRINGS.USER_LOGGED_OUT);
+    } catch (err) {
+      console.error(METHOD + STRINGS.ERROR_CATCH, err);
+      return res.status(500).send(STRINGS.ERROR_GENERAL);
+    }
+  }
+);
+
+
+
+/** Handle GET requests to '/refresh'
+  * @swagger
+  * /user/refresh:
+  *   post:
+  *     summary: Refresh login tokens.
+  *     tags: [User]
+  *     requestBody:
+  *       required: true
+  *       content:
+  *         application/json:
+  *           schema:
+  *             type: object
+  *             properties:
+  *               username:
+  *                 type: string
+  *                 example: feeb
+  *               refreshToken:
+  *                 type: string
+  *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNzAzOX0.UshglaCpw-HVoX5OswtXEvFYih5_snzcZXCQ1i7gJcg
+  *     responses:
+  *       200:
+  *         description: Successful login.
+  *         content:
+  *           application/json:
+  *             schema:
+  *               type: object
+  *               properties:
+  *                 accessToken:
+  *                   type: string
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNjczOX0.wzIcgryuFwsM4YafOswkJ_gNrpcKC1RAmePTyBghgok
+  *                 refreshToken:
+  *                   type: string
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNzAzOX0.UshglaCpw-HVoX5OswtXEvFYih5_snzcZXCQ1i7gJcg
+  *       400:
+  *         description: Bad request.
+  *       404:
+  *         description: Refresh token not found.
+  *       500:
+  *         description: General server error.
+*/
+router.post('/refresh',
+  async function (req, res) {
+    const METHOD = MODULE + ' POST: "/refresh": ';
+    console.log(METHOD, req.body);
+
+    try {
+      // Return error if refresh token was not supplied.
+      const { username, refreshToken } = req.body;
+      if (!(refreshToken && username)) {
+        console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
+      }
+
+      // Return error if user doesn't exist.
+      const user = recordFindByUsername(username);
+      if (!user) {
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND, username);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
+      }
+
+      // Return error if refresh token doesn't exist.
+      const index = refreshTokens.indexOf(refreshToken);
+      if (index < 0) {
+        console.error(METHOD + STRINGS.ERROR_NOT_FOUND, refreshToken, refreshTokens);
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
+      }
+
+      // Generate access and refresh tokens.
+      const newAccessToken = generateAccessToken(username);
+      const newRefreshToken = generateRefreshToken(username);
+      if (!(newAccessToken && newRefreshToken)) {
+        console.error(METHOD + STRINGS.ERROR_TOKEN_CREATE);
+        return res.status(500).send(STRINGS.ERROR_TOKEN_CREATE);
+      }
+
+      // All OK... return tokens.
+      console.log(METHOD + STRINGS.SUCCESS, user);
+      return res.send(
+        {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken
+        }
+      );
+    } catch (err) {
+      console.error(METHOD + STRINGS.ERROR_CATCH, err);
+      return res.status(500).send(STRINGS.ERROR_GENERAL);
+    }
+  }
+);
+
 
 
 /** Find a user by username.
@@ -265,13 +406,12 @@ async function insertRecord(record) {
     return res.status(400).send();
   }
 
-  // CReate password hash.
+  // Create password hash.
   const encryptedPassword = await bcrypt.hash(password, 10);
   // Create new record.
   const newRecord = {
     username: _.lowerCase(username),
-    password: encryptedPassword,
-    token: `${Math.floor(Math.random() * 1000000)}`
+    password: encryptedPassword
   };
 
   // Store new record.
@@ -292,11 +432,14 @@ function generateAccessToken(username) {
   const METHOD = MODULE + ' generateAccessToken(): ';
   console.debug(METHOD, username);
 
-  return jwt.sign(
+  const accessToken = jwt.sign(
     { username: username },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRE }
   );
+  console.debug(METHOD + " accessToken", accessToken);
+
+  return accessToken;
 }
 
 
@@ -314,22 +457,17 @@ function generateRefreshToken(username) {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: REFRESH_TOKEN_EXPIRE }
   );
+  console.debug(METHOD + " refreshToken", refreshToken);
 
   // If a refresh token was generated...
   if (refreshToken) {
     // Save it.
     refreshTokens.push(refreshToken);
+    console.debug(METHOD + " refreshTokens", refreshTokens);
   }
-  console.debug(METHOD + " refreshTokens", refreshTokens);
 
   return refreshToken;
 }
-
-
-// @TODO_EWEN Implement /logout end-point.
-
-// @TODO_EWEN Implement /refresh end-point.
-
 
 
 // Export this router.
