@@ -68,6 +68,16 @@ app.use('/user/', userRouter);
 //////////////////////////////////////////////////////////////////////////////////////////////
 //
 
+/* Handle GET requests to '/'
+ * - Redirect to api-docs
+*/
+app.get('/',
+  (req, res) => {
+    console.log('GET: "/"', req.body);
+    res.redirect("api-docs");
+  }
+);
+
 
 
 /** Load and check env.
