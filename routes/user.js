@@ -10,6 +10,7 @@ import express from "express";
 import * as STRINGS from "../strings.js";
 import bcrypt from "bcryptjs";
 import _ from "lodash";
+import jwt from "jsonwebtoken";
 
 
 // Name of this module.
@@ -27,6 +28,14 @@ let myTestData = [
   }
 ];
 
+
+/** Access token expire time in seconds. */
+const ACCESS_TOKEN_EXPIRE = (15 * 60);
+/** Refresh token expire time in seconds (should be longer than access token expire time). */
+const REFRESH_TOKEN_EXPIRE = (ACCESS_TOKEN_EXPIRE + (5 * 60));
+
+/** List of all current refresh tokens. */
+let refreshTokens = [];
 
 /**
   * @swagger
@@ -63,9 +72,12 @@ let myTestData = [
   *             schema:
   *               type: object
   *               properties:
-  *                 token:
+  *                 accessToken:
   *                   type: string
-  *                   example: 1234567890abcdefghijklm0987654321
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNjczOX0.wzIcgryuFwsM4YafOswkJ_gNrpcKC1RAmePTyBghgok
+  *                 refreshToken:
+  *                   type: string
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNzAzOX0.UshglaCpw-HVoX5OswtXEvFYih5_snzcZXCQ1i7gJcg
   *       400:
   *         description: Bad request.
   *       500:
@@ -98,9 +110,22 @@ router.post('/register',
         return res.status(500).send(STRINGS.ERROR_GENERAL);
       }
 
-      // All OK... return token.
+      // Generate access and refresh tokens.
+      const accessToken = generateAccessToken(username);
+      const refreshToken = generateRefreshToken(username);
+      if (!(accessToken && refreshToken)) {
+        console.error(METHOD + STRINGS.ERROR_TOKEN_CREATE);
+        return res.status(500).send(STRINGS.ERROR_TOKEN_CREATE);
+      }
+
+      // All OK... return tokens.
       console.log(METHOD + STRINGS.SUCCESS, insertedRecord);
-      return res.send({ token: insertedRecord.token });
+      return res.send(
+        {
+          accessToken: accessToken,
+          refreshToken: refreshToken
+        }
+      );
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
       return res.status(500).send(err);
@@ -136,9 +161,12 @@ router.post('/register',
   *             schema:
   *               type: object
   *               properties:
-  *                 token:
+  *                 accessToken:
   *                   type: string
-  *                   example: 1234567890abcdefghijklm0987654321
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNjczOX0.wzIcgryuFwsM4YafOswkJ_gNrpcKC1RAmePTyBghgok
+  *                 refreshToken:
+  *                   type: string
+  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImQiLCJpYXQiOjE2OTIwMDU4MzksImV4cCI6MTY5MjAwNzAzOX0.UshglaCpw-HVoX5OswtXEvFYih5_snzcZXCQ1i7gJcg
   *       400:
   *         description: Bad request.
   *       404:
@@ -156,7 +184,7 @@ router.post('/login',
       const { username, password } = req.body;
       if (!(password && username)) {
         console.error(METHOD + STRINGS.ERROR_INVALID_INPUT);
-        return res.status(400).send();
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
       // Return error if user doesn't exist.
@@ -169,15 +197,28 @@ router.post('/login',
       // Return error if password is incorrect.
       if (!await passwordIsValid(req.body.password, user.password)) {
         console.error(METHOD + STRINGS.ERROR_BAD_PASSWORD);
-        return res.status(400).send();
+        return res.status(400).send(STRINGS.ERROR_BAD_REQUEST);
       }
 
-      // All OK... return token.
+      // Generate access and refresh tokens.
+      const accessToken = generateAccessToken(username);
+      const refreshToken = generateRefreshToken(username);
+      if (!(accessToken && refreshToken)) {
+        console.error(METHOD + STRINGS.ERROR_TOKEN_CREATE);
+        return res.status(500).send(STRINGS.ERROR_TOKEN_CREATE);
+      }
+
+      // All OK... return tokens.
       console.log(METHOD + STRINGS.SUCCESS, user);
-      return res.send({ token: user.token });
+      return res.send(
+        {
+          accessToken: accessToken,
+          refreshToken: refreshToken
+        }
+      );
     } catch (err) {
       console.error(METHOD + STRINGS.ERROR_CATCH, err);
-      return res.status(500).send(err);
+      return res.status(500).send(STRINGS.ERROR_GENERAL);
     }
   }
 );
@@ -241,6 +282,54 @@ async function insertRecord(record) {
 
   return null;
 }
+
+
+/** Generate an access token.
+  * @param {string} username Username.
+  * @returns {string | undefined} Returns token or undefined if error.
+ */
+function generateAccessToken(username) {
+  const METHOD = MODULE + ' generateAccessToken(): ';
+  console.debug(METHOD, username);
+
+  return jwt.sign(
+    { username: username },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: ACCESS_TOKEN_EXPIRE }
+  );
+}
+
+
+/** Generate a refresh token.
+  * - Save refresh token to local array.
+  * @param {string} username Username.
+  * @returns {string | undefined} Returns token or undefined if error.
+ */
+function generateRefreshToken(username) {
+  const METHOD = MODULE + ' generateRefreshToken(): ';
+  console.debug(METHOD, username);
+
+  const refreshToken = jwt.sign(
+    { username: username },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRE }
+  );
+
+  // If a refresh token was generated...
+  if (refreshToken) {
+    // Save it.
+    refreshTokens.push(refreshToken);
+  }
+  console.debug(METHOD + " refreshTokens", refreshTokens);
+
+  return refreshToken;
+}
+
+
+// @TODO_EWEN Implement /logout end-point.
+
+// @TODO_EWEN Implement /refresh end-point.
+
 
 
 // Export this router.

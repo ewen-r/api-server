@@ -41,7 +41,7 @@ const options = {
       description: 'server-api test by E Reynolds.'
     },
     servers: [
-      { url: `http://127.0.0.1:${PORT}`},
+      { url: `http://127.0.0.1:${PORT}` },
       { url: 'https://api-server-j2h3.onrender.com' }
     ]
   },
@@ -102,7 +102,12 @@ function loadEnv() {
 
 function checkVars() {
   // return true if all required vars are loaded.
-  return (process.env.MONGO_URI);
+  return (
+    process.env.MONGO_URI
+    && process.env.ACCESS_TOKEN_SECRET
+    && process.env.REFRESH_TOKEN_SECRET
+  );
+
 }
 
 
