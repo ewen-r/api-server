@@ -14,6 +14,7 @@ import * as STRINGS from "./strings.js";
 import swaggerUI from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 import testRouter from "./routes/test.js";
+import testAuthRouter from "./routes/test_auth.js";
 import userRouter from "./routes/user.js";
 
 
@@ -51,7 +52,7 @@ const options = {
   ]
 };
 
-// Initialise swagger-jsdoc
+// Initialize swagger-jsdoc
 const specs = swaggerJSDoc(options);
 
 
@@ -60,10 +61,10 @@ app.use(express.json());
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 
-// Use router from TEST
+// Use routers.
 app.use('/test', testRouter);
 app.use('/user/', userRouter);
-
+app.use('/test_auth', testAuthRouter);
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //
