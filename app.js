@@ -16,6 +16,7 @@ import swaggerJSDoc from "swagger-jsdoc";
 import testRouter from "./routes/test.js";
 import testAuthRouter from "./routes/test_auth.js";
 import userRouter from "./routes/user.js";
+import quizRouter from './routes/quiz.js';
 
 
 /* Set dirname prefix for the current root so that files can be served.
@@ -42,7 +43,7 @@ const options = {
       description: 'server-api test by E Reynolds.'
     },
     servers: [
-      { url: `http://127.0.0.1:${PORT}` },
+      { url: `http://localhost:${PORT}` },
       { url: 'https://api-server-j2h3.onrender.com' }
     ]
   },
@@ -65,6 +66,9 @@ app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 app.use('/test', testRouter);
 app.use('/user/', userRouter);
 app.use('/test_auth', testAuthRouter);
+app.use('/quiz', quizRouter);
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //
