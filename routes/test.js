@@ -8,40 +8,17 @@
 
 import express from "express";
 import * as STRINGS from "../strings.js";
-import testData from "./test_data.js";
+import { quotesTestData } from "./test_data.js";
 
+/** Name of this module. */
 const MODULE = 'TEST';
 
 // Get router.
 const router = express.Router();
 
 // Use local copy of test data.
-let myTestData = [...testData];
+let myTestData = [...quotesTestData];
 
-/**
-  * @swagger
-  *  components:
-  *    schemas:
-  *      TestData:
-  *        type: object
-  *        required:
-  *          - author
-  *          - quote
-  *        properties:
-  *          id:
-  *            type: number
-  *            description: Item UUID.
-  *          author:
-  *            type: string
-  *            description: Item author.
-  *          quote:
-  *            type: string
-  *            description: Item content.
-  *        example:
-  *          id: 1
-  *          quote: "Hello World."
-  *          author: "Anon programmer"
- */
 
 /**
   * @swagger
@@ -49,6 +26,32 @@ let myTestData = [...testData];
   *     name: Test
   *     description: Test API end-point.
  */
+
+
+/**
+  * @swagger
+  *   components:
+  *     schemas:
+  *       TestData_Quotes:
+  *         type: object
+  *         required:
+  *           - author
+  *           - quote
+  *         properties:
+  *           id:
+  *             type: number
+  *             description: Item UUID.
+  *           author:
+  *             type: string
+  *             description: Item author.
+  *           quote:
+  *             type: string
+  *             description: Item content.
+  *         example:
+  *           id: 1
+  *           quote: "Hello World."
+  *           author: "Anon programmer"
+*/
 
 
 /** Handle GET requests to '/'
@@ -65,7 +68,7 @@ let myTestData = [...testData];
   *             schema:
   *               type: array
   *               items:
-  *                 $ref: '#components/schemas/TestData'
+  *                 $ref: '#components/schemas/TestData_Quotes'
   *       500:
   *         description: General server error.
 */
@@ -75,7 +78,7 @@ router.get('/',
     console.log(METHOD, req.body);
 
     try {
-      console.log(METHOD + STRINGS.SUCCESS, testData);
+      console.log(METHOD + STRINGS.SUCCESS, quotesTestData);
       return res.send(myTestData);
     } catch (err) {
       console.error(METHOD + ERROR, err);
@@ -96,14 +99,14 @@ router.get('/',
   *       content:
   *         application/json:
   *           schema:
-  *             $ref: '#components/schemas/TestData'
+  *             $ref: '#components/schemas/TestData_Quotes'
   *     responses:
   *       200:
   *         description: Successfully added item.
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/TestData'
+  *               $ref: '#components/schemas/TestData_Quotes'
   *       400:
   *         description: Bad request.
   *       500:
@@ -150,7 +153,7 @@ router.post('/',
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/TestData'
+  *               $ref: '#components/schemas/TestData_Quotes'
   *       404:
   *         description: Item not found.
   *       500:
@@ -195,14 +198,14 @@ router.get('/:id',
   *       content:
   *         application/json:
   *           schema:
-  *             $ref: '#components/schemas/TestData'
+  *             $ref: '#components/schemas/TestData_Quotes'
   *     responses:
   *       200:
   *         description: Successfully updated item.
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/TestData'
+  *               $ref: '#components/schemas/TestData_Quotes'
   *       400:
   *         description: Bad request.
   *       404:
@@ -256,7 +259,7 @@ router.patch('/:id',
   *         content:
   *           application/json:
   *             schema:
-  *               $ref: '#components/schemas/TestData'
+  *               $ref: '#components/schemas/TestData_Quotes'
   *       404:
   *         description: Item not found.
   *       500:
