@@ -17,6 +17,7 @@ import testRouter from "./routes/test.js";
 import testAuthRouter from "./routes/test_auth.js";
 import userRouter from "./routes/user.js";
 import quizRouter from './routes/quiz.js';
+import cors from 'cors';
 
 
 /* Set dirname prefix for the current root so that files can be served.
@@ -58,6 +59,7 @@ const specs = swaggerJSDoc(options);
 
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
